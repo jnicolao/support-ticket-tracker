@@ -48,10 +48,16 @@ export default function CreateTicketForm({ onCreated }: { onCreated: () => void 
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
+          aria-invalid={errors.title ? true : undefined}
+          aria-describedby={errors.title ? 'title-error' : undefined}
           className="mt-1 w-full rounded border px-2 py-1"
         />
       </label>
-      {errors.title && <p className="mt-1 text-sm text-red-700">{errors.title}</p>}
+      {errors.title && (
+        <p id="title-error" className="mt-1 text-sm text-red-700">
+          {errors.title}
+        </p>
+      )}
 
       <label className="mt-3 block text-sm">
         Description
@@ -69,6 +75,8 @@ export default function CreateTicketForm({ onCreated }: { onCreated: () => void 
           <select
             value={priority}
             onChange={(event) => setPriority(event.target.value as Priority)}
+            aria-invalid={errors.priority ? true : undefined}
+            aria-describedby={errors.priority ? 'priority-error' : undefined}
             className="select mt-1 block rounded border py-1 pr-8 pl-2 capitalize"
           >
             {PRIORITIES.map((value) => (
@@ -78,7 +86,11 @@ export default function CreateTicketForm({ onCreated }: { onCreated: () => void 
             ))}
           </select>
         </label>
-        {errors.priority && <p className="text-sm text-red-700">{errors.priority}</p>}
+        {errors.priority && (
+          <p id="priority-error" className="text-sm text-red-700">
+            {errors.priority}
+          </p>
+        )}
         <button
           type="submit"
           disabled={submitting}
