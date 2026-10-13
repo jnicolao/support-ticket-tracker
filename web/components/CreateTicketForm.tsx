@@ -69,7 +69,7 @@ export default function CreateTicketForm({ onCreated }: { onCreated: () => void 
           <select
             value={priority}
             onChange={(event) => setPriority(event.target.value as Priority)}
-            className="mt-1 block rounded border px-2 py-1 capitalize"
+            className="select mt-1 block rounded border py-1 pr-8 pl-2 capitalize"
           >
             {PRIORITIES.map((value) => (
               <option key={value} value={value}>

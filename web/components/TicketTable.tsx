@@ -39,7 +39,7 @@ export default function TicketTable({
                 <select
                   value={ticket.status}
                   onChange={(event) => onStatusChange(ticket.id, event.target.value as Status)}
-                  className="rounded border px-2 py-1"
+                  className="select rounded border py-1 pr-8 pl-2"
                 >
                   {STATUSES.map((status) => (
                     <option key={status} value={status}>
