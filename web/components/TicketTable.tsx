@@ -1,9 +1,9 @@
 import { Priority, STATUSES, STATUS_LABELS, Status, Ticket } from '@/lib/types';
 
 const PRIORITY_STYLES: Record<Priority, string> = {
-  low: 'bg-gray-100 text-gray-700',
-  medium: 'bg-amber-100 text-amber-800',
-  high: 'bg-red-100 text-red-800',
+  low: 'text-green-700',
+  medium: 'text-yellow-600',
+  high: 'text-red-700',
 };
 
 export default function TicketTable({
@@ -18,46 +18,48 @@ export default function TicketTable({
   }
 
   return (
-    <table className="mt-4 w-full text-left text-sm">
-      <thead className="border-b text-gray-500">
-        <tr>
-          <th className="py-2 pr-4 font-medium">Title</th>
-          <th className="py-2 pr-4 font-medium">Status</th>
-          <th className="py-2 pr-4 font-medium">Priority</th>
-          <th className="py-2 font-medium">Created</th>
-        </tr>
-      </thead>
-      <tbody>
-        {tickets.map((ticket) => (
-          <tr key={ticket.id} className="border-b align-top">
-            <td className="py-2 pr-4">
-              <div className="font-medium">{ticket.title}</div>
-              {ticket.description && <div className="text-gray-500">{ticket.description}</div>}
-            </td>
-            <td className="py-2 pr-4">
-              <select
-                value={ticket.status}
-                onChange={(event) => onStatusChange(ticket.id, event.target.value as Status)}
-                className="rounded border px-2 py-1"
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
-            </td>
-            <td className="py-2 pr-4">
-              <span className={`rounded px-2 py-0.5 capitalize ${PRIORITY_STYLES[ticket.priority]}`}>
-                {ticket.priority}
-              </span>
-            </td>
-            <td className="py-2 whitespace-nowrap text-gray-500">
-              {new Date(ticket.created_at).toLocaleString()}
-            </td>
+    <div className="mt-4 overflow-x-auto rounded border">
+      <table className="w-full min-w-[640px] text-left text-sm">
+        <thead className="border-b bg-gray-50 text-gray-500">
+          <tr>
+            <th className="px-3 py-2 font-medium">Title</th>
+            <th className="px-3 py-2 font-medium">Status</th>
+            <th className="px-3 py-2 font-medium">Priority</th>
+            <th className="px-3 py-2 font-medium">Created</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y">
+          {tickets.map((ticket) => (
+            <tr key={ticket.id} className="align-top">
+              <td className="px-3 py-2">
+                <div className="font-medium">{ticket.title}</div>
+                {ticket.description && <div className="text-gray-500">{ticket.description}</div>}
+              </td>
+              <td className="px-3 py-2">
+                <select
+                  value={ticket.status}
+                  onChange={(event) => onStatusChange(ticket.id, event.target.value as Status)}
+                  className="rounded border px-2 py-1"
+                >
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="px-3 py-2">
+                <span className={`capitalize ${PRIORITY_STYLES[ticket.priority]}`}>
+                  {ticket.priority}
+                </span>
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-gray-500">
+                {new Date(ticket.created_at).toLocaleString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
