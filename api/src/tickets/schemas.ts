@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PRIORITIES } from './constants';
+import { PRIORITIES, STATUSES } from './constants';
 
 export const createTicketSchema = z.strictObject({
   title: z
@@ -13,4 +13,10 @@ export const createTicketSchema = z.strictObject({
     .nullish()
     .transform((value) => value || null),
   priority: z.enum(PRIORITIES).default('medium'),
+});
+
+export const listTicketsQuerySchema = z.object({
+  status: z.enum(STATUSES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
