@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
+import { ZodError } from 'zod';
 
 export class HttpError extends Error {
   constructor(
@@ -14,6 +15,14 @@ export const notFound: RequestHandler = (_req, res) => {
 };
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  if (err instanceof ZodError) {
+    const details = err.issues.map((issue) => ({
+      path: issue.path.map(String).join('.'),
+      message: issue.message,
+    }));
+    res.status(400).json({ error: { message: 'Validation failed', details } });
+    return;
+  }
   if (err instanceof HttpError) {
     res.status(err.status).json({ error: { message: err.message } });
     return;
