@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import CreateTicketForm from '@/components/CreateTicketForm';
 import TicketTable from '@/components/TicketTable';
-import { listTickets } from '@/lib/api';
-import { TicketPage } from '@/lib/types';
+import { listTickets, updateTicketStatus } from '@/lib/api';
+import { Status, TicketPage } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
@@ -30,11 +31,22 @@ export default function Home() {
     setRefreshKey((key) => key + 1);
   }
 
+  async function changeStatus(id: number, status: Status) {
+    try {
+      await updateTicketStatus(id, status);
+      load(page);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  }
+
   const pagination = tickets?.pagination;
 
   return (
     <main className="mx-auto max-w-3xl p-6">
       <h1 className="text-2xl font-semibold">Tickets</h1>
+
+      <CreateTicketForm onCreated={() => load(1)} />
 
       {error && (
         <p role="alert" className="mt-4 rounded bg-red-50 p-3 text-red-700">
@@ -45,7 +57,7 @@ export default function Home() {
 
       {tickets && pagination && (
         <>
-          <TicketTable tickets={tickets.data} />
+          <TicketTable tickets={tickets.data} onStatusChange={changeStatus} />
           <nav className="mt-4 flex items-center justify-between text-sm">
             <button
               type="button"
