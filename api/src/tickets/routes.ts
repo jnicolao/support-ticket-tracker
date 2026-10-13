@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db';
 import { HttpError } from '../errors';
-import { Ticket } from './constants';
+import { STATUSES, Status, Ticket } from './constants';
 import {
   createTicketSchema,
   listTicketsQuerySchema,
@@ -45,6 +45,19 @@ ticketsRouter.get('/', async (req, res) => {
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
+});
+
+ticketsRouter.get('/stats', async (_req, res) => {
+  const { rows } = await pool.query<{ status: Status; count: number }>(
+    'SELECT status, count(*)::int AS count FROM tickets GROUP BY status',
+  );
+
+  const stats = Object.fromEntries(STATUSES.map((status) => [status, 0]));
+  for (const row of rows) {
+    stats[row.status] = row.count;
+  }
+
+  res.json(stats);
 });
 
 ticketsRouter.patch('/:id', async (req, res) => {
