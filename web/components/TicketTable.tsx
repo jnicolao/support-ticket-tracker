@@ -2,7 +2,7 @@ import { Priority, STATUSES, STATUS_LABELS, Status, Ticket } from '@/lib/types';
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   low: 'text-green-700',
-  medium: 'text-yellow-600',
+  medium: 'text-yellow-700',
   high: 'text-red-700',
 };
 
@@ -22,10 +22,18 @@ export default function TicketTable({
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="border-b bg-gray-50 text-gray-500">
           <tr>
-            <th className="px-3 py-2 font-medium">Title</th>
-            <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2 font-medium">Priority</th>
-            <th className="px-3 py-2 font-medium">Created</th>
+            <th scope="col" className="px-3 py-2 font-medium">
+              Title
+            </th>
+            <th scope="col" className="px-3 py-2 font-medium">
+              Status
+            </th>
+            <th scope="col" className="px-3 py-2 font-medium">
+              Priority
+            </th>
+            <th scope="col" className="px-3 py-2 font-medium">
+              Created
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -37,6 +45,7 @@ export default function TicketTable({
               </td>
               <td className="px-3 py-2">
                 <select
+                  aria-label={`Status of ${ticket.title}`}
                   value={ticket.status}
                   onChange={(event) => onStatusChange(ticket.id, event.target.value as Status)}
                   className="select rounded border py-1 pr-8 pl-2"

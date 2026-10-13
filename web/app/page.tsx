@@ -53,12 +53,16 @@ export default function Home() {
           {error}
         </p>
       )}
-      {loading && !tickets && <p className="mt-4 text-gray-500">Loading tickets...</p>}
+      {loading && !tickets && (
+        <p role="status" className="mt-4 text-gray-500">
+          Loading tickets...
+        </p>
+      )}
 
       {tickets && pagination && (
         <>
           <TicketTable tickets={tickets.data} onStatusChange={changeStatus} />
-          <nav className="mt-4 flex items-center justify-between text-sm">
+          <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm">
             <button
               type="button"
               onClick={() => load(pagination.page - 1)}
