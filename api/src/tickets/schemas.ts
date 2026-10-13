@@ -20,3 +20,15 @@ export const listTicketsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
+
+export const ticketIdSchema = z.coerce.number().int().min(1).max(2147483647);
+
+export const updateTicketSchema = z
+  .strictObject({
+    status: z.enum(STATUSES).optional(),
+    priority: z.enum(PRIORITIES).optional(),
+  })
+  .refine(
+    (body) => body.status !== undefined || body.priority !== undefined,
+    'Provide status and/or priority',
+  );

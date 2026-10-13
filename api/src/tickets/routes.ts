@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { pool } from '../db';
+import { HttpError } from '../errors';
 import { Ticket } from './constants';
-import { createTicketSchema, listTicketsQuerySchema } from './schemas';
+import {
+  createTicketSchema,
+  listTicketsQuerySchema,
+  ticketIdSchema,
+  updateTicketSchema,
+} from './schemas';
 
 export const ticketsRouter = Router();
 
@@ -39,4 +45,22 @@ ticketsRouter.get('/', async (req, res) => {
     data: rows,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
+});
+
+ticketsRouter.patch('/:id', async (req, res) => {
+  const id = ticketIdSchema.parse(req.params.id);
+  const { status, priority } = updateTicketSchema.parse(req.body);
+
+  const { rows } = await pool.query<Ticket>(
+    `UPDATE tickets
+     SET status = COALESCE($2, status), priority = COALESCE($3, priority)
+     WHERE id = $1
+     RETURNING *`,
+    [id, status ?? null, priority ?? null],
+  );
+  if (rows.length === 0) {
+    throw new HttpError(404, 'Ticket not found');
+  }
+
+  res.json(rows[0]);
 });
