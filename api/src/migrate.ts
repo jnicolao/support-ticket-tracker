@@ -1,8 +1,16 @@
 import 'dotenv/config';
-import { migrate, pool } from './db';
+import { pool } from './db';
+import { migrate } from './migrator';
 
 migrate()
-  .then(() => console.log('Schema applied'))
+  .then((applied) => {
+    if (applied.length === 0) {
+      console.log('No pending migrations');
+    }
+    for (const name of applied) {
+      console.log(`Applied ${name}`);
+    }
+  })
   .catch((err) => {
     console.error(err);
     process.exitCode = 1;
