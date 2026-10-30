@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach } from 'vitest';
-import { migrate, pool } from '../src/db';
+import { pool } from '../src/db';
+import { migrate } from '../src/migrator';
 
 if (!process.env.DATABASE_URL?.endsWith('_test')) {
   throw new Error('Refusing to run tests: DATABASE_URL must point at a database ending in _test');

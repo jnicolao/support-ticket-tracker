@@ -7,7 +7,7 @@ A small ticket tracker: an Express + PostgreSQL REST API and a single-page Next.
 ## Layout
 
 ```
-api/   Express + TypeScript API: src/ (app), db/ (schema), tests/ (integration tests)
+api/   Express + TypeScript API: src/ (app), db/migrations/ (numbered SQL), tests/ (integration tests)
 web/   Next.js + Tailwind UI
 db/    Compose init script that creates the test database
 ```
@@ -27,7 +27,7 @@ Start PostgreSQL. The first start of the volume also creates the `tickets` and `
 docker compose up -d --wait
 ```
 
-Start the API on http://localhost:3001. The env file holds `DATABASE_URL` and `PORT`. The schema script only uses `CREATE ... IF NOT EXISTS`, so it is safe to run again at any time.
+Start the API on http://localhost:3001. The env file holds `DATABASE_URL` and `PORT`. The migrate script applies the numbered SQL files in `api/db/migrations` that are not yet recorded in the `schema_migrations` table, each in its own transaction, so it is safe to run again at any time.
 
 ```bash
 cd api
@@ -64,13 +64,14 @@ cd api
 npm test
 ```
 
-The 21 tests cover:
+The 22 tests cover:
 
 - `create.test.ts`: defaults applied and row persisted, description and priority stored, and five invalid bodies (missing, blank and overlong title, bad priority, unknown field) rejected with the error shape
 - `list.test.ts`: status filter, page size, total, newest-first order, a page past the end, the unfiltered defaults, and five invalid query values rejected
 - `update.test.ts`: status and priority updated independently and persisted, four invalid inputs rejected, unknown id returns 404
 - `stats.test.ts`: every status present with zeros, counts reflect a PATCH, values are numbers
 - `errors.test.ts`: malformed JSON returns 400 in the standard shape
+- `migrations.test.ts`: every migration file is recorded exactly once and a second run applies nothing
 
 The UI has no automated tests; `npm run lint` in `web/` runs ESLint with the Next.js and React Hooks rules.
 
@@ -119,7 +120,7 @@ Response: `400 {"error":{"message":"Validation failed","details":[{"path":"title
 
 ## Decisions and tradeoffs
 
-I used plain parameterized SQL through `pg` instead of an ORM because four queries do not justify the abstraction, and the SQL stays readable and easy to reason about. Status and priority are text columns with CHECK constraints rather than Postgres enums, since adding a value is a one-line constraint change instead of an enum migration, and the allowed values live in one array that validation and the tests share, with the UI keeping its own copy rather than adding monorepo tooling. Validation is zod with strict objects, so unknown fields and bad query values get a 400 instead of being silently dropped or clamped. The schema is a single idempotent SQL file applied by a script; numbered migrations with a tracking table are the next step once the schema changes more than once. Pagination is offset-based because it is simple and the UI needs page numbers; cursor pagination would be the upgrade for large tables or for stable pages while tickets are being created. PATCH is one UPDATE with COALESCE and RETURNING, so concurrent updates are serialized by the row lock and the last write wins per field, with no read-then-write race. The tests run against a real test database and the files run one at a time because they share it. The UI refetches after every mutation instead of updating optimistically, which keeps the state logic small at the cost of a round trip. CI runs the API tests against a Postgres service and lints, typechecks and builds the UI on every pull request. With more time I would add auth, an `updated_at` column and a status history, and a browser-level end-to-end test for the create and status-change flow.
+I used plain parameterized SQL through `pg` instead of an ORM because four queries do not justify the abstraction, and the SQL stays readable and easy to reason about. Status and priority are text columns with CHECK constraints rather than Postgres enums, since adding a value is a one-line constraint change instead of an enum migration, and the allowed values live in one array that validation and the tests share, with the UI keeping its own copy rather than adding monorepo tooling. Validation is zod with strict objects, so unknown fields and bad query values get a 400 instead of being silently dropped or clamped. Schema changes are numbered SQL files applied in order by a thirty-line script that records each one in a `schema_migrations` table, which covers this project's needs without a migration library. Pagination is offset-based because it is simple and the UI needs page numbers; cursor pagination would be the upgrade for large tables or for stable pages while tickets are being created. PATCH is one UPDATE with COALESCE and RETURNING, so concurrent updates are serialized by the row lock and the last write wins per field, with no read-then-write race. The tests run against a real test database and the files run one at a time because they share it. The UI refetches after every mutation instead of updating optimistically, which keeps the state logic small at the cost of a round trip. CI runs the API tests against a Postgres service and lints, typechecks and builds the UI on every pull request. With more time I would add auth, an `updated_at` column and a status history, and a browser-level end-to-end test for the create and status-change flow.
 
 ## Assumptions
 
