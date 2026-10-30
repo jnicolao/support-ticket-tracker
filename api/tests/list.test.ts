@@ -20,6 +20,7 @@ describe('GET /tickets', () => {
     expect(page1.body.data[0]).toEqual({
       ...open3,
       created_at: open3.created_at.toISOString(),
+      updated_at: open3.updated_at.toISOString(),
     });
     expect(page1.body.pagination).toEqual({ page: 1, limit: 2, total: 3, totalPages: 2 });
 

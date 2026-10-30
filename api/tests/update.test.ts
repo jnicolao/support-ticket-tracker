@@ -14,7 +14,9 @@ describe('PATCH /tickets/:id', () => {
       ...ticket,
       status: 'closed',
       created_at: ticket.created_at.toISOString(),
+      updated_at: expect.any(String),
     });
+    expect(new Date(closed.body.updated_at) > ticket.updated_at).toBe(true);
 
     const high = await request(app).patch(`/tickets/${ticket.id}`).send({ priority: 'high' });
     expect(high.status).toBe(200);

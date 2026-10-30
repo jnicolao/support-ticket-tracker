@@ -17,8 +17,10 @@ describe('POST /tickets', () => {
       status: 'open',
       priority: 'medium',
       created_at: expect.any(String),
+      updated_at: expect.any(String),
     });
     expect(new Date(res.body.created_at).toISOString()).toBe(res.body.created_at);
+    expect(res.body.updated_at).toBe(res.body.created_at);
 
     const { rows } = await pool.query('SELECT * FROM tickets');
     expect(rows).toHaveLength(1);
