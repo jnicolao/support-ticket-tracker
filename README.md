@@ -68,7 +68,7 @@ The 22 tests cover:
 
 - `create.test.ts`: defaults applied and row persisted, description and priority stored, and five invalid bodies (missing, blank and overlong title, bad priority, unknown field) rejected with the error shape
 - `list.test.ts`: status filter, page size, total, newest-first order, a page past the end, the unfiltered defaults, and five invalid query values rejected
-- `update.test.ts`: status and priority updated independently and persisted, four invalid inputs rejected, unknown id returns 404
+- `update.test.ts`: status and priority updated independently and persisted, `updated_at` advances, four invalid inputs rejected, unknown id returns 404
 - `stats.test.ts`: every status present with zeros, counts reflect a PATCH, values are numbers
 - `errors.test.ts`: malformed JSON returns 400 in the standard shape
 - `migrations.test.ts`: every migration file is recorded exactly once and a second run applies nothing
@@ -86,6 +86,8 @@ The UI has no automated tests; `npm run lint` in `web/` runs ESLint with the Nex
 
 These are the only endpoints. There is no `GET /tickets/:id` or `DELETE` because the assignment did not ask for them.
 
+Every ticket carries `created_at` and `updated_at`. A database trigger sets `updated_at` on every UPDATE, so no code path can forget it; on a new ticket the two are equal.
+
 Every error has the same shape: `{ "error": { "message": "...", "details": [...] } }`. `details` lists each invalid field with a `path` and a `message` when validation fails. Unknown body fields are rejected with 400; unknown query parameters are ignored. Malformed JSON and unknown routes use the same shape, and unexpected errors return a generic 500 message with no stack trace.
 
 Create a ticket:
@@ -94,7 +96,7 @@ Create a ticket:
 curl -X POST localhost:3001/tickets -H 'Content-Type: application/json' -d '{"title":"Printer jammed","priority":"high"}'
 ```
 
-Response: `201 {"id":1,"title":"Printer jammed","description":null,"status":"open","priority":"high","created_at":"2026-10-13T08:00:00.000Z"}`
+Response: `201 {"id":1,"title":"Printer jammed","description":null,"status":"open","priority":"high","created_at":"2026-10-13T08:00:00.000Z","updated_at":"2026-10-13T08:00:00.000Z"}`
 
 List open tickets, five per page:
 
@@ -120,7 +122,7 @@ Response: `400 {"error":{"message":"Validation failed","details":[{"path":"title
 
 ## Decisions and tradeoffs
 
-I used plain parameterized SQL through `pg` instead of an ORM because four queries do not justify the abstraction, and the SQL stays readable and easy to reason about. Status and priority are text columns with CHECK constraints rather than Postgres enums, since adding a value is a one-line constraint change instead of an enum migration, and the allowed values live in one array that validation and the tests share, with the UI keeping its own copy rather than adding monorepo tooling. Validation is zod with strict objects, so unknown fields and bad query values get a 400 instead of being silently dropped or clamped. Schema changes are numbered SQL files applied in order by a thirty-line script that records each one in a `schema_migrations` table, which covers this project's needs without a migration library. Pagination is offset-based because it is simple and the UI needs page numbers; cursor pagination would be the upgrade for large tables or for stable pages while tickets are being created. PATCH is one UPDATE with COALESCE and RETURNING, so concurrent updates are serialized by the row lock and the last write wins per field, with no read-then-write race. The tests run against a real test database and the files run one at a time because they share it. The UI refetches after every mutation instead of updating optimistically, which keeps the state logic small at the cost of a round trip. CI runs the API tests against a Postgres service and lints, typechecks and builds the UI on every pull request. With more time I would add auth, an `updated_at` column and a status history, and a browser-level end-to-end test for the create and status-change flow.
+I used plain parameterized SQL through `pg` instead of an ORM because four queries do not justify the abstraction, and the SQL stays readable and easy to reason about. Status and priority are text columns with CHECK constraints rather than Postgres enums, since adding a value is a one-line constraint change instead of an enum migration, and the allowed values live in one array that validation and the tests share, with the UI keeping its own copy rather than adding monorepo tooling. Validation is zod with strict objects, so unknown fields and bad query values get a 400 instead of being silently dropped or clamped. Schema changes are numbered SQL files applied in order by a thirty-line script that records each one in a `schema_migrations` table, which covers this project's needs without a migration library. Pagination is offset-based because it is simple and the UI needs page numbers; cursor pagination would be the upgrade for large tables or for stable pages while tickets are being created. PATCH is one UPDATE with COALESCE and RETURNING, so concurrent updates are serialized by the row lock and the last write wins per field, with no read-then-write race. The tests run against a real test database and the files run one at a time because they share it. The UI refetches after every mutation instead of updating optimistically, which keeps the state logic small at the cost of a round trip. CI runs the API tests against a Postgres service and lints, typechecks and builds the UI on every pull request. With more time I would add auth, a status history, and a browser-level end-to-end test for the create and status-change flow.
 
 ## Assumptions
 
