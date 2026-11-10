@@ -1,15 +1,37 @@
-# Mini Ticket Tracker
+# Support Ticket Tracker
 
 [![CI](https://github.com/jnicolao/support-ticket-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/jnicolao/support-ticket-tracker/actions/workflows/ci.yml)
 
-A small ticket tracker: an Express + PostgreSQL REST API and a single-page Next.js UI for creating tickets, listing them, and changing their status.
+A ticket tracker for a small support team: create tickets, triage them by status and priority, filter the queue, and open any ticket for its full details. It is an Express and PostgreSQL REST API with a Next.js UI, covered by integration tests that run against a real database.
 
-## Layout
+![The ticket list with the create form, status filter with counts, and the ticket table](docs/screenshot.png)
+
+## Features
+
+- **Create tickets** with a title, description and priority. Validation errors come from the API and appear next to the field they belong to. After a create the list returns to page 1 so the new ticket is visible.
+- **Triage in the table.** Each row has a status select and a priority select. Either one saves on change and then refetches the current page.
+- **Filter by status.** Four buttons (All, Open, In progress, Closed) filter the list, and each one shows its live ticket count. An empty result names the active filter.
+- **Ticket detail page.** A ticket's title links to `/tickets/:id` with the full description, status, priority, and the created and updated times. In the table, a long description is cut to two lines.
+- **Delete tickets** behind a confirmation prompt.
+- **Pagination** at 10 tickets per page, newest first. If a delete or a status change empties the current page, the list steps back to the last page that has tickets.
+- **Accessible by default.** Every control has a label, errors are announced, and the table scrolls sideways on small screens instead of breaking the layout.
+
+## Stack
+
+| Part | Tools |
+|---|---|
+| API | Node.js, Express 5, TypeScript, `pg` with plain parameterized SQL, zod |
+| Database | PostgreSQL 17, numbered SQL migrations |
+| UI | Next.js 16 App Router, React 19, Tailwind CSS 4 |
+| Tests and CI | Vitest, Supertest, GitHub Actions |
+
+## Project layout
 
 ```
-api/   Express + TypeScript API: src/ (app), db/migrations/ (numbered SQL), tests/ (integration tests)
-web/   Next.js + Tailwind UI
-db/    Compose init script that creates the test database
+api/    Express + TypeScript API: src/ (app), db/migrations/ (numbered SQL), tests/ (integration tests)
+web/    Next.js + Tailwind UI
+db/     Compose init script that creates the test database
+docs/   README screenshot
 ```
 
 The API and the UI are two independent npm packages with no workspace or shared package between them.
@@ -46,38 +68,6 @@ npm run dev
 ```
 
 The UI calls the API at `http://localhost:3001`. Set `NEXT_PUBLIC_API_URL` to change that (see `web/.env.example`). To start from an empty database, run `docker compose down -v` and the steps above again.
-
-## What the UI does
-
-- A form with title, description and priority creates a ticket. Validation errors come from the API and are shown next to the field they belong to. After a successful create the list returns to page 1 so the new ticket is visible.
-- A table lists tickets newest first with title, status, priority and creation time, 10 per page, with Prev and Next buttons driven by the API's pagination block.
-- Each row has a status select and a priority select. Either one saves on change and then refetches the current page. There are no optimistic updates.
-- Each row has a Delete button that asks for confirmation first. If a delete or a status change empties the current page, the list steps back to the last page that has tickets.
-- Four buttons above the table filter the list by status (All, Open, In progress, Closed). Changing the filter returns to page 1, and an empty result names the active filter.
-- Each filter button shows its ticket count, read from the stats endpoint and refreshed after every change.
-- A ticket's title links to a detail page at `/tickets/:id` with the full description, status, priority, and the created and updated times. In the table, a long description is cut to two lines.
-
-## Run the tests
-
-The tests are integration tests: Supertest drives the Express app against the real `tickets_test` database, which is truncated before every test. PostgreSQL must be running. The setup refuses to run against any database whose name does not end in `_test`, and `TEST_DATABASE_URL` overrides the default connection string.
-
-```bash
-cd api
-npm test
-```
-
-The 28 tests cover:
-
-- `create.test.ts`: defaults applied and row persisted, description and priority stored, and five invalid bodies (missing, blank and overlong title, bad priority, unknown field) rejected with the error shape
-- `list.test.ts`: status filter, page size, total, newest-first order, a page past the end, the unfiltered defaults, and five invalid query values rejected
-- `get.test.ts`: one ticket returned by id, a non-integer id rejected, unknown id returns 404
-- `update.test.ts`: status and priority updated independently and persisted, `updated_at` advances, four invalid inputs rejected, unknown id returns 404
-- `delete.test.ts`: the ticket is removed and others are left alone, a non-integer id rejected, unknown id returns 404
-- `stats.test.ts`: every status present with zeros, counts reflect a PATCH, values are numbers
-- `errors.test.ts`: malformed JSON returns 400 in the standard shape
-- `migrations.test.ts`: every migration file is recorded exactly once and a second run applies nothing
-
-The UI has no automated tests; `npm run lint` in `web/` runs ESLint with the Next.js and React Hooks rules.
 
 ## API
 
@@ -124,17 +114,56 @@ curl -X POST localhost:3001/tickets -H 'Content-Type: application/json' -d '{"ti
 
 Response: `400 {"error":{"message":"Validation failed","details":[{"path":"title","message":"Title is required"}]}}`
 
-## Decisions and tradeoffs
+## Tests
 
-I used plain parameterized SQL through `pg` instead of an ORM because four queries do not justify the abstraction, and the SQL stays readable and easy to reason about. Status and priority are text columns with CHECK constraints rather than Postgres enums, since adding a value is a one-line constraint change instead of an enum migration, and the allowed values live in one array that validation and the tests share, with the UI keeping its own copy rather than adding monorepo tooling. Validation is zod with strict objects, so unknown fields and bad query values get a 400 instead of being silently dropped or clamped. Schema changes are numbered SQL files applied in order by a thirty-line script that records each one in a `schema_migrations` table, which covers this project's needs without a migration library. Pagination is offset-based because it is simple and the UI needs page numbers; cursor pagination would be the upgrade for large tables or for stable pages while tickets are being created. PATCH is one UPDATE with COALESCE and RETURNING, so concurrent updates are serialized by the row lock and the last write wins per field, with no read-then-write race. The tests run against a real test database and the files run one at a time because they share it. The UI refetches after every mutation instead of updating optimistically, which keeps the state logic small at the cost of a round trip. CI runs the API tests against a Postgres service and lints, typechecks and builds the UI on every pull request. With more time I would add auth, a status history, and a browser-level end-to-end test for the create and status-change flow.
+The tests are integration tests: Supertest drives the Express app against the real `tickets_test` database, which is truncated before every test. PostgreSQL must be running. The setup refuses to run against any database whose name does not end in `_test`, and `TEST_DATABASE_URL` overrides the default connection string.
 
-## Assumptions
+```bash
+cd api
+npm test
+```
+
+The 28 tests cover:
+
+- `create.test.ts`: defaults applied and row persisted, description and priority stored, and five invalid bodies (missing, blank and overlong title, bad priority, unknown field) rejected with the error shape
+- `list.test.ts`: status filter, page size, total, newest-first order, a page past the end, the unfiltered defaults, and five invalid query values rejected
+- `get.test.ts`: one ticket returned by id, a non-integer id rejected, unknown id returns 404
+- `update.test.ts`: status and priority updated independently and persisted, `updated_at` advances, four invalid inputs rejected, unknown id returns 404
+- `delete.test.ts`: the ticket is removed and others are left alone, a non-integer id rejected, unknown id returns 404
+- `stats.test.ts`: every status present with zeros, counts reflect a PATCH, values are numbers
+- `errors.test.ts`: malformed JSON returns 400 in the standard shape
+- `migrations.test.ts`: every migration file is recorded exactly once and a second run applies nothing
+
+The UI has no automated tests; `npm run lint` in `web/` runs ESLint with the Next.js and React Hooks rules.
+
+## Design decisions
+
+- **Plain SQL over an ORM.** The API runs a handful of queries through `pg`. They stay readable and easy to reason about, and an ORM would add more than it removes.
+- **Text columns with CHECK constraints, not Postgres enums.** Adding a status or priority is a one-line constraint change instead of an enum migration. The allowed values live in one array that validation and the tests share, and the UI keeps its own copy instead of adding monorepo tooling.
+- **Strict validation with zod.** Unknown body fields and bad query values get a 400 instead of being silently dropped or clamped.
+- **Numbered SQL migrations.** A small script applies each file in order inside a transaction and records it in a `schema_migrations` table, which covers this project without a migration library.
+- **`updated_at` is set by a database trigger**, so no code path can forget it.
+- **Offset pagination.** It is simple and the UI needs page numbers. Cursor pagination would be the upgrade for large tables or for stable pages while tickets are being created.
+- **PATCH is one UPDATE with COALESCE and RETURNING.** Concurrent updates are serialized by the row lock and the last write wins per field, with no read-then-write race.
+- **Integration tests against a real database.** The test files run one at a time because they share it.
+- **Refetch after every change, no optimistic updates.** This keeps the UI state logic small at the cost of a round trip.
+- **CI on every pull request.** It runs the API tests against a Postgres service and lints, typechecks and builds the UI.
+
+## Behavior and limits
 
 - Any status can move to any other status; there is no workflow enforcement.
 - Status cannot be set on create; every ticket starts open.
 - Title and description are trimmed, and a blank description is stored as null.
-- The UI shows 10 tickets per page while the API defaults to 20, so pagination is reachable with a handful of tickets.
+- Deleting a ticket is permanent; there is no soft delete.
+- The UI shows 10 tickets per page while the API defaults to 20.
 - Ticket ids are integers; a non-integer or out-of-range id is a 400 and an unknown id is a 404.
 - The list's count and page queries are not wrapped in a transaction, so `total` can be off by one if a ticket is created between them. The next refetch corrects it.
-- The API allows any origin and has no auth, which is only acceptable for local use.
 - Timestamps are returned as UTC ISO 8601 strings; the UI shows them in the browser's local time.
+- There are no user accounts. The API allows any origin and has no auth, so anyone who can reach it can change any ticket.
+
+## Possible next steps
+
+- User accounts, with tickets assigned to people
+- A status history per ticket
+- Editing a ticket's title and description
+- A browser-level end-to-end test for the create, triage and delete flow
