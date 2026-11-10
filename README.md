@@ -167,3 +167,7 @@ The UI has no automated tests; `npm run lint` in `web/` runs ESLint with the Nex
 - A status history per ticket
 - Editing a ticket's title and description
 - A browser-level end-to-end test for the create, triage and delete flow
+
+## License
+
+[MIT](LICENSE)
