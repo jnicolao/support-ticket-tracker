@@ -52,7 +52,8 @@ The UI calls the API at `http://localhost:3001`. Set `NEXT_PUBLIC_API_URL` to ch
 - A form with title, description and priority creates a ticket. Validation errors come from the API and are shown next to the field they belong to. After a successful create the list returns to page 1 so the new ticket is visible.
 - A table lists tickets newest first with title, status, priority and creation time, 10 per page, with Prev and Next buttons driven by the API's pagination block.
 - Each row has a status select and a priority select. Either one saves on change and then refetches the current page. There are no optimistic updates.
-- The status filter and the stats endpoint are API-only. The UI has no filter or stats display because the assignment did not ask for them.
+- Four buttons above the table filter the list by status (All, Open, In progress, Closed). Changing the filter returns to page 1, and an empty result names the active filter.
+- The stats endpoint is API-only. The UI has no stats display because the assignment did not ask for it.
 
 ## Run the tests
 

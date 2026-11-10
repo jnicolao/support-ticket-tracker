@@ -16,13 +16,15 @@ const PRIORITY_STYLES: Record<Priority, string> = {
 
 export default function TicketTable({
   tickets,
+  emptyMessage,
   onChange,
 }: {
   tickets: Ticket[];
+  emptyMessage: string;
   onChange: (id: number, changes: TicketChanges) => void;
 }) {
   if (tickets.length === 0) {
-    return <p className="mt-4 text-gray-500">No tickets yet.</p>;
+    return <p className="mt-4 text-gray-500">{emptyMessage}</p>;
   }
 
   return (

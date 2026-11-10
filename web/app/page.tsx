@@ -2,33 +2,44 @@
 
 import { useEffect, useState } from 'react';
 import CreateTicketForm from '@/components/CreateTicketForm';
+import StatusFilter from '@/components/StatusFilter';
 import TicketTable from '@/components/TicketTable';
 import { listTickets, updateTicket } from '@/lib/api';
-import { TicketChanges, TicketPage } from '@/lib/types';
+import { STATUS_LABELS, Status, TicketChanges, TicketPage } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
 export default function Home() {
   const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<Status | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tickets, setTickets] = useState<TicketPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listTickets(page, PAGE_SIZE)
+    listTickets(page, PAGE_SIZE, status)
       .then((result) => {
+        if (result.data.length === 0 && page > 1) {
+          setPage(Math.max(result.pagination.totalPages, 1));
+          return;
+        }
         setTickets(result);
         setError(null);
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, refreshKey]);
+  }, [page, status, refreshKey]);
 
   function load(next: number) {
     setLoading(true);
     setPage(next);
     setRefreshKey((key) => key + 1);
+  }
+
+  function filterBy(next: Status | null) {
+    setStatus(next);
+    load(1);
   }
 
   async function changeTicket(id: number, changes: TicketChanges) {
@@ -59,9 +70,17 @@ export default function Home() {
         </p>
       )}
 
+      <StatusFilter value={status} onChange={filterBy} />
+
       {tickets && pagination && (
         <>
-          <TicketTable tickets={tickets.data} onChange={changeTicket} />
+          <TicketTable
+            tickets={tickets.data}
+            emptyMessage={
+              status ? `No ${STATUS_LABELS[status].toLowerCase()} tickets.` : 'No tickets yet.'
+            }
+            onChange={changeTicket}
+          />
           <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm">
             <button
               type="button"
@@ -73,7 +92,7 @@ export default function Home() {
             </button>
             <span className="text-gray-500">
               Page {pagination.page} of {Math.max(pagination.totalPages, 1)} ({pagination.total}{' '}
-              tickets)
+              {pagination.total === 1 ? 'ticket' : 'tickets'})
             </span>
             <button
               type="button"
