@@ -1,4 +1,13 @@
-import { Priority, STATUSES, STATUS_LABELS, Status, Ticket } from '@/lib/types';
+import Link from 'next/link';
+import {
+  PRIORITIES,
+  Priority,
+  STATUSES,
+  STATUS_LABELS,
+  Status,
+  Ticket,
+  TicketChanges,
+} from '@/lib/types';
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   low: 'text-green-700',
@@ -8,18 +17,22 @@ const PRIORITY_STYLES: Record<Priority, string> = {
 
 export default function TicketTable({
   tickets,
-  onStatusChange,
+  emptyMessage,
+  onChange,
+  onDelete,
 }: {
   tickets: Ticket[];
-  onStatusChange: (id: number, status: Status) => void;
+  emptyMessage: string;
+  onChange: (id: number, changes: TicketChanges) => void;
+  onDelete: (ticket: Ticket) => void;
 }) {
   if (tickets.length === 0) {
-    return <p className="mt-4 text-gray-500">No tickets yet.</p>;
+    return <p className="mt-4 text-gray-500">{emptyMessage}</p>;
   }
 
   return (
     <div className="mt-4 overflow-x-auto rounded border">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="border-b bg-gray-50 text-gray-500">
           <tr>
             <th scope="col" className="px-3 py-2 font-medium">
@@ -34,20 +47,27 @@ export default function TicketTable({
             <th scope="col" className="px-3 py-2 font-medium">
               Created
             </th>
+            <th scope="col" className="px-3 py-2">
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y">
           {tickets.map((ticket) => (
             <tr key={ticket.id} className="align-top">
               <td className="px-3 py-2">
-                <div className="font-medium">{ticket.title}</div>
-                {ticket.description && <div className="text-gray-500">{ticket.description}</div>}
+                <Link href={`/tickets/${ticket.id}`} className="font-medium hover:underline">
+                  {ticket.title}
+                </Link>
+                {ticket.description && (
+                  <div className="line-clamp-2 text-gray-500">{ticket.description}</div>
+                )}
               </td>
               <td className="px-3 py-2">
                 <select
                   aria-label={`Status of ${ticket.title}`}
                   value={ticket.status}
-                  onChange={(event) => onStatusChange(ticket.id, event.target.value as Status)}
+                  onChange={(event) => onChange(ticket.id, { status: event.target.value as Status })}
                   className="select rounded border py-1 pr-8 pl-2"
                 >
                   {STATUSES.map((status) => (
@@ -58,12 +78,33 @@ export default function TicketTable({
                 </select>
               </td>
               <td className="px-3 py-2">
-                <span className={`capitalize ${PRIORITY_STYLES[ticket.priority]}`}>
-                  {ticket.priority}
-                </span>
+                <select
+                  aria-label={`Priority of ${ticket.title}`}
+                  value={ticket.priority}
+                  onChange={(event) =>
+                    onChange(ticket.id, { priority: event.target.value as Priority })
+                  }
+                  className={`select rounded border py-1 pr-8 pl-2 capitalize ${PRIORITY_STYLES[ticket.priority]}`}
+                >
+                  {PRIORITIES.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {priority}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td className="px-3 py-2 whitespace-nowrap text-gray-500">
                 {new Date(ticket.created_at).toLocaleString()}
+              </td>
+              <td className="px-3 py-2">
+                <button
+                  type="button"
+                  aria-label={`Delete ${ticket.title}`}
+                  onClick={() => onDelete(ticket)}
+                  className="rounded border px-2 py-1 text-red-700"
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

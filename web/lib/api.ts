@@ -1,4 +1,4 @@
-import { Priority, Status, Ticket, TicketPage } from './types';
+import { Priority, Stats, Status, Ticket, TicketChanges, TicketPage } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -22,6 +22,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });
+  if (res.status === 204) {
+    return undefined as T;
+  }
   const body = await res.json();
   if (!res.ok) {
     throw new ApiError(res.status, body.error.message, body.error.details);
@@ -29,14 +32,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
-export function listTickets(page: number, limit: number) {
-  return request<TicketPage>(`/tickets?page=${page}&limit=${limit}`);
+export function listTickets(page: number, limit: number, status: Status | null) {
+  const filter = status ? `&status=${status}` : '';
+  return request<TicketPage>(`/tickets?page=${page}&limit=${limit}${filter}`);
+}
+
+export function getTicket(id: string) {
+  return request<Ticket>(`/tickets/${id}`);
+}
+
+export function getStats() {
+  return request<Stats>('/tickets/stats');
 }
 
 export function createTicket(input: { title: string; description: string; priority: Priority }) {
   return request<Ticket>('/tickets', { method: 'POST', body: JSON.stringify(input) });
 }
 
-export function updateTicketStatus(id: number, status: Status) {
-  return request<Ticket>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+export function updateTicket(id: number, changes: TicketChanges) {
+  return request<Ticket>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(changes) });
+}
+
+export function deleteTicket(id: number) {
+  return request<void>(`/tickets/${id}`, { method: 'DELETE' });
 }

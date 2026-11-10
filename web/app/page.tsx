@@ -2,28 +2,36 @@
 
 import { useEffect, useState } from 'react';
 import CreateTicketForm from '@/components/CreateTicketForm';
+import StatusFilter from '@/components/StatusFilter';
 import TicketTable from '@/components/TicketTable';
-import { listTickets, updateTicketStatus } from '@/lib/api';
-import { Status, TicketPage } from '@/lib/types';
+import { deleteTicket, getStats, listTickets, updateTicket } from '@/lib/api';
+import { STATUS_LABELS, Stats, Status, Ticket, TicketChanges, TicketPage } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
 export default function Home() {
   const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<Status | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tickets, setTickets] = useState<TicketPage | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listTickets(page, PAGE_SIZE)
-      .then((result) => {
+    Promise.all([listTickets(page, PAGE_SIZE, status), getStats()])
+      .then(([result, counts]) => {
+        if (result.data.length === 0 && page > 1) {
+          setPage(Math.max(result.pagination.totalPages, 1));
+          return;
+        }
         setTickets(result);
+        setStats(counts);
         setError(null);
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, refreshKey]);
+  }, [page, status, refreshKey]);
 
   function load(next: number) {
     setLoading(true);
@@ -31,9 +39,26 @@ export default function Home() {
     setRefreshKey((key) => key + 1);
   }
 
-  async function changeStatus(id: number, status: Status) {
+  function filterBy(next: Status | null) {
+    setStatus(next);
+    load(1);
+  }
+
+  async function changeTicket(id: number, changes: TicketChanges) {
     try {
-      await updateTicketStatus(id, status);
+      await updateTicket(id, changes);
+      load(page);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  }
+
+  async function removeTicket(ticket: Ticket) {
+    if (!window.confirm(`Delete "${ticket.title}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteTicket(ticket.id);
       load(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -43,7 +68,7 @@ export default function Home() {
   const pagination = tickets?.pagination;
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <main className="mx-auto max-w-4xl p-6">
       <h1 className="text-2xl font-semibold">Tickets</h1>
 
       <CreateTicketForm onCreated={() => load(1)} />
@@ -59,9 +84,18 @@ export default function Home() {
         </p>
       )}
 
+      <StatusFilter value={status} stats={stats} onChange={filterBy} />
+
       {tickets && pagination && (
         <>
-          <TicketTable tickets={tickets.data} onStatusChange={changeStatus} />
+          <TicketTable
+            tickets={tickets.data}
+            emptyMessage={
+              status ? `No ${STATUS_LABELS[status].toLowerCase()} tickets.` : 'No tickets yet.'
+            }
+            onChange={changeTicket}
+            onDelete={removeTicket}
+          />
           <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm">
             <button
               type="button"
@@ -73,7 +107,7 @@ export default function Home() {
             </button>
             <span className="text-gray-500">
               Page {pagination.page} of {Math.max(pagination.totalPages, 1)} ({pagination.total}{' '}
-              tickets)
+              {pagination.total === 1 ? 'ticket' : 'tickets'})
             </span>
             <button
               type="button"

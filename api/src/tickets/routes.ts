@@ -60,6 +60,17 @@ ticketsRouter.get('/stats', async (_req, res) => {
   res.json(stats);
 });
 
+ticketsRouter.get('/:id', async (req, res) => {
+  const id = ticketIdSchema.parse(req.params.id);
+
+  const { rows } = await pool.query<Ticket>('SELECT * FROM tickets WHERE id = $1', [id]);
+  if (rows.length === 0) {
+    throw new HttpError(404, 'Ticket not found');
+  }
+
+  res.json(rows[0]);
+});
+
 ticketsRouter.patch('/:id', async (req, res) => {
   const id = ticketIdSchema.parse(req.params.id);
   const { status, priority } = updateTicketSchema.parse(req.body);
@@ -76,4 +87,15 @@ ticketsRouter.patch('/:id', async (req, res) => {
   }
 
   res.json(rows[0]);
+});
+
+ticketsRouter.delete('/:id', async (req, res) => {
+  const id = ticketIdSchema.parse(req.params.id);
+
+  const { rowCount } = await pool.query('DELETE FROM tickets WHERE id = $1', [id]);
+  if (rowCount === 0) {
+    throw new HttpError(404, 'Ticket not found');
+  }
+
+  res.status(204).end();
 });

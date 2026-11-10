@@ -18,6 +18,14 @@ export interface Ticket {
   status: Status;
   priority: Priority;
   created_at: string;
+  updated_at: string;
+}
+
+export type Stats = Record<Status, number>;
+
+export interface TicketChanges {
+  status?: Status;
+  priority?: Priority;
 }
 
 export interface TicketPage {
