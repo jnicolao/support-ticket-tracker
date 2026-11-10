@@ -22,6 +22,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });
+  if (res.status === 204) {
+    return undefined as T;
+  }
   const body = await res.json();
   if (!res.ok) {
     throw new ApiError(res.status, body.error.message, body.error.details);
@@ -48,4 +51,8 @@ export function createTicket(input: { title: string; description: string; priori
 
 export function updateTicket(id: number, changes: TicketChanges) {
   return request<Ticket>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(changes) });
+}
+
+export function deleteTicket(id: number) {
+  return request<void>(`/tickets/${id}`, { method: 'DELETE' });
 }

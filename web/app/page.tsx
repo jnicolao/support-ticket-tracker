@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import CreateTicketForm from '@/components/CreateTicketForm';
 import StatusFilter from '@/components/StatusFilter';
 import TicketTable from '@/components/TicketTable';
-import { getStats, listTickets, updateTicket } from '@/lib/api';
-import { STATUS_LABELS, Stats, Status, TicketChanges, TicketPage } from '@/lib/types';
+import { deleteTicket, getStats, listTickets, updateTicket } from '@/lib/api';
+import { STATUS_LABELS, Stats, Status, Ticket, TicketChanges, TicketPage } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
@@ -53,10 +53,22 @@ export default function Home() {
     }
   }
 
+  async function removeTicket(ticket: Ticket) {
+    if (!window.confirm(`Delete "${ticket.title}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteTicket(ticket.id);
+      load(page);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  }
+
   const pagination = tickets?.pagination;
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <main className="mx-auto max-w-4xl p-6">
       <h1 className="text-2xl font-semibold">Tickets</h1>
 
       <CreateTicketForm onCreated={() => load(1)} />
@@ -82,6 +94,7 @@ export default function Home() {
               status ? `No ${STATUS_LABELS[status].toLowerCase()} tickets.` : 'No tickets yet.'
             }
             onChange={changeTicket}
+            onDelete={removeTicket}
           />
           <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm">
             <button

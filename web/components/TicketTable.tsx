@@ -19,10 +19,12 @@ export default function TicketTable({
   tickets,
   emptyMessage,
   onChange,
+  onDelete,
 }: {
   tickets: Ticket[];
   emptyMessage: string;
   onChange: (id: number, changes: TicketChanges) => void;
+  onDelete: (ticket: Ticket) => void;
 }) {
   if (tickets.length === 0) {
     return <p className="mt-4 text-gray-500">{emptyMessage}</p>;
@@ -30,7 +32,7 @@ export default function TicketTable({
 
   return (
     <div className="mt-4 overflow-x-auto rounded border">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="border-b bg-gray-50 text-gray-500">
           <tr>
             <th scope="col" className="px-3 py-2 font-medium">
@@ -44,6 +46,9 @@ export default function TicketTable({
             </th>
             <th scope="col" className="px-3 py-2 font-medium">
               Created
+            </th>
+            <th scope="col" className="px-3 py-2">
+              <span className="sr-only">Actions</span>
             </th>
           </tr>
         </thead>
@@ -90,6 +95,16 @@ export default function TicketTable({
               </td>
               <td className="px-3 py-2 whitespace-nowrap text-gray-500">
                 {new Date(ticket.created_at).toLocaleString()}
+              </td>
+              <td className="px-3 py-2">
+                <button
+                  type="button"
+                  aria-label={`Delete ${ticket.title}`}
+                  onClick={() => onDelete(ticket)}
+                  className="rounded border px-2 py-1 text-red-700"
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

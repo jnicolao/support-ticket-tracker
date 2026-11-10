@@ -52,6 +52,7 @@ The UI calls the API at `http://localhost:3001`. Set `NEXT_PUBLIC_API_URL` to ch
 - A form with title, description and priority creates a ticket. Validation errors come from the API and are shown next to the field they belong to. After a successful create the list returns to page 1 so the new ticket is visible.
 - A table lists tickets newest first with title, status, priority and creation time, 10 per page, with Prev and Next buttons driven by the API's pagination block.
 - Each row has a status select and a priority select. Either one saves on change and then refetches the current page. There are no optimistic updates.
+- Each row has a Delete button that asks for confirmation first. If a delete or a status change empties the current page, the list steps back to the last page that has tickets.
 - Four buttons above the table filter the list by status (All, Open, In progress, Closed). Changing the filter returns to page 1, and an empty result names the active filter.
 - Each filter button shows its ticket count, read from the stats endpoint and refreshed after every change.
 - A ticket's title links to a detail page at `/tickets/:id` with the full description, status, priority, and the created and updated times. In the table, a long description is cut to two lines.
@@ -65,12 +66,13 @@ cd api
 npm test
 ```
 
-The 25 tests cover:
+The 28 tests cover:
 
 - `create.test.ts`: defaults applied and row persisted, description and priority stored, and five invalid bodies (missing, blank and overlong title, bad priority, unknown field) rejected with the error shape
 - `list.test.ts`: status filter, page size, total, newest-first order, a page past the end, the unfiltered defaults, and five invalid query values rejected
 - `get.test.ts`: one ticket returned by id, a non-integer id rejected, unknown id returns 404
 - `update.test.ts`: status and priority updated independently and persisted, `updated_at` advances, four invalid inputs rejected, unknown id returns 404
+- `delete.test.ts`: the ticket is removed and others are left alone, a non-integer id rejected, unknown id returns 404
 - `stats.test.ts`: every status present with zeros, counts reflect a PATCH, values are numbers
 - `errors.test.ts`: malformed JSON returns 400 in the standard shape
 - `migrations.test.ts`: every migration file is recorded exactly once and a second run applies nothing
@@ -85,9 +87,8 @@ The UI has no automated tests; `npm run lint` in `web/` runs ESLint with the Nex
 | GET | `/tickets` | List tickets ordered by `created_at` then `id`, newest first. Query: `status`, `page` (integer, default 1), `limit` (integer 1 to 100, default 20). Returns `{ data, pagination: { page, limit, total, totalPages } }`. A page past the end returns an empty `data` with 200; `totalPages` is 0 when there are no tickets. |
 | GET | `/tickets/:id` | One ticket. Returns 200 with the ticket, 400 for a non-integer id, 404 for an unknown id. |
 | PATCH | `/tickets/:id` | Update `status` (`open`, `in_progress`, `closed`) and/or `priority`. The body must contain at least one of them and nothing else. Returns 200 with the updated ticket, 400 for a non-integer id, 404 for an unknown id. |
+| DELETE | `/tickets/:id` | Delete a ticket permanently. Returns 204 with no body, 400 for a non-integer id, 404 for an unknown id. |
 | GET | `/tickets/stats` | Count of tickets per status as numbers, always including all three statuses. |
-
-These are the only endpoints. There is no `DELETE` because the assignment did not ask for it.
 
 Every ticket carries `created_at` and `updated_at`. A database trigger sets `updated_at` on every UPDATE, so no code path can forget it; on a new ticket the two are equal.
 

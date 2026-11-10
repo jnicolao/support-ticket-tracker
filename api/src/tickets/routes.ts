@@ -88,3 +88,14 @@ ticketsRouter.patch('/:id', async (req, res) => {
 
   res.json(rows[0]);
 });
+
+ticketsRouter.delete('/:id', async (req, res) => {
+  const id = ticketIdSchema.parse(req.params.id);
+
+  const { rowCount } = await pool.query('DELETE FROM tickets WHERE id = $1', [id]);
+  if (rowCount === 0) {
+    throw new HttpError(404, 'Ticket not found');
+  }
+
+  res.status(204).end();
+});
