@@ -1,4 +1,4 @@
-import { Priority, Status, Ticket, TicketChanges, TicketPage } from './types';
+import { Priority, Stats, Status, Ticket, TicketChanges, TicketPage } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -32,6 +32,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function listTickets(page: number, limit: number, status: Status | null) {
   const filter = status ? `&status=${status}` : '';
   return request<TicketPage>(`/tickets?page=${page}&limit=${limit}${filter}`);
+}
+
+export function getStats() {
+  return request<Stats>('/tickets/stats');
 }
 
 export function createTicket(input: { title: string; description: string; priority: Priority }) {

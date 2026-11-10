@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import CreateTicketForm from '@/components/CreateTicketForm';
 import StatusFilter from '@/components/StatusFilter';
 import TicketTable from '@/components/TicketTable';
-import { listTickets, updateTicket } from '@/lib/api';
-import { STATUS_LABELS, Status, TicketChanges, TicketPage } from '@/lib/types';
+import { getStats, listTickets, updateTicket } from '@/lib/api';
+import { STATUS_LABELS, Stats, Status, TicketChanges, TicketPage } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
@@ -14,17 +14,19 @@ export default function Home() {
   const [status, setStatus] = useState<Status | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [tickets, setTickets] = useState<TicketPage | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listTickets(page, PAGE_SIZE, status)
-      .then((result) => {
+    Promise.all([listTickets(page, PAGE_SIZE, status), getStats()])
+      .then(([result, counts]) => {
         if (result.data.length === 0 && page > 1) {
           setPage(Math.max(result.pagination.totalPages, 1));
           return;
         }
         setTickets(result);
+        setStats(counts);
         setError(null);
       })
       .catch((err: Error) => setError(err.message))
@@ -70,7 +72,7 @@ export default function Home() {
         </p>
       )}
 
-      <StatusFilter value={status} onChange={filterBy} />
+      <StatusFilter value={status} stats={stats} onChange={filterBy} />
 
       {tickets && pagination && (
         <>
