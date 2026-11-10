@@ -1,4 +1,4 @@
-import { Priority, Status, Ticket, TicketPage } from './types';
+import { Priority, Ticket, TicketChanges, TicketPage } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -37,6 +37,6 @@ export function createTicket(input: { title: string; description: string; priori
   return request<Ticket>('/tickets', { method: 'POST', body: JSON.stringify(input) });
 }
 
-export function updateTicketStatus(id: number, status: Status) {
-  return request<Ticket>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+export function updateTicket(id: number, changes: TicketChanges) {
+  return request<Ticket>(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(changes) });
 }

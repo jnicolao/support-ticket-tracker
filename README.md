@@ -51,8 +51,7 @@ The UI calls the API at `http://localhost:3001`. Set `NEXT_PUBLIC_API_URL` to ch
 
 - A form with title, description and priority creates a ticket. Validation errors come from the API and are shown next to the field they belong to. After a successful create the list returns to page 1 so the new ticket is visible.
 - A table lists tickets newest first with title, status, priority and creation time, 10 per page, with Prev and Next buttons driven by the API's pagination block.
-- Each row has a status select that saves on change and then refetches the current page. There are no optimistic updates.
-- Priority is chosen when a ticket is created. The UI does not edit it afterwards: the assignment asked for a way to change status, and priority changes go through the API's PATCH endpoint. A priority select per row would work exactly like the status select.
+- Each row has a status select and a priority select. Either one saves on change and then refetches the current page. There are no optimistic updates.
 - The status filter and the stats endpoint are API-only. The UI has no filter or stats display because the assignment did not ask for them.
 
 ## Run the tests
@@ -128,7 +127,6 @@ I used plain parameterized SQL through `pg` instead of an ORM because four queri
 
 - Any status can move to any other status; there is no workflow enforcement.
 - Status cannot be set on create; every ticket starts open.
-- Priority is set at creation and changed only through the API; the UI changes status only.
 - Title and description are trimmed, and a blank description is stored as null.
 - The UI shows 10 tickets per page while the API defaults to 20, so pagination is reachable with a handful of tickets.
 - Ticket ids are integers; a non-integer or out-of-range id is a 400 and an unknown id is a 404.

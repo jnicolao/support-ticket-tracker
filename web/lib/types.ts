@@ -21,6 +21,11 @@ export interface Ticket {
   updated_at: string;
 }
 
+export interface TicketChanges {
+  status?: Status;
+  priority?: Priority;
+}
+
 export interface TicketPage {
   data: Ticket[];
   pagination: { page: number; limit: number; total: number; totalPages: number };

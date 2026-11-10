@@ -1,4 +1,12 @@
-import { Priority, STATUSES, STATUS_LABELS, Status, Ticket } from '@/lib/types';
+import {
+  PRIORITIES,
+  Priority,
+  STATUSES,
+  STATUS_LABELS,
+  Status,
+  Ticket,
+  TicketChanges,
+} from '@/lib/types';
 
 const PRIORITY_STYLES: Record<Priority, string> = {
   low: 'text-green-700',
@@ -8,10 +16,10 @@ const PRIORITY_STYLES: Record<Priority, string> = {
 
 export default function TicketTable({
   tickets,
-  onStatusChange,
+  onChange,
 }: {
   tickets: Ticket[];
-  onStatusChange: (id: number, status: Status) => void;
+  onChange: (id: number, changes: TicketChanges) => void;
 }) {
   if (tickets.length === 0) {
     return <p className="mt-4 text-gray-500">No tickets yet.</p>;
@@ -47,7 +55,7 @@ export default function TicketTable({
                 <select
                   aria-label={`Status of ${ticket.title}`}
                   value={ticket.status}
-                  onChange={(event) => onStatusChange(ticket.id, event.target.value as Status)}
+                  onChange={(event) => onChange(ticket.id, { status: event.target.value as Status })}
                   className="select rounded border py-1 pr-8 pl-2"
                 >
                   {STATUSES.map((status) => (
@@ -58,9 +66,20 @@ export default function TicketTable({
                 </select>
               </td>
               <td className="px-3 py-2">
-                <span className={`capitalize ${PRIORITY_STYLES[ticket.priority]}`}>
-                  {ticket.priority}
-                </span>
+                <select
+                  aria-label={`Priority of ${ticket.title}`}
+                  value={ticket.priority}
+                  onChange={(event) =>
+                    onChange(ticket.id, { priority: event.target.value as Priority })
+                  }
+                  className={`select rounded border py-1 pr-8 pl-2 capitalize ${PRIORITY_STYLES[ticket.priority]}`}
+                >
+                  {PRIORITIES.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {priority}
+                    </option>
+                  ))}
+                </select>
               </td>
               <td className="px-3 py-2 whitespace-nowrap text-gray-500">
                 {new Date(ticket.created_at).toLocaleString()}

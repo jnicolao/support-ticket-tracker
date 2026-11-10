@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import CreateTicketForm from '@/components/CreateTicketForm';
 import TicketTable from '@/components/TicketTable';
-import { listTickets, updateTicketStatus } from '@/lib/api';
-import { Status, TicketPage } from '@/lib/types';
+import { listTickets, updateTicket } from '@/lib/api';
+import { TicketChanges, TicketPage } from '@/lib/types';
 
 const PAGE_SIZE = 10;
 
@@ -31,9 +31,9 @@ export default function Home() {
     setRefreshKey((key) => key + 1);
   }
 
-  async function changeStatus(id: number, status: Status) {
+  async function changeTicket(id: number, changes: TicketChanges) {
     try {
-      await updateTicketStatus(id, status);
+      await updateTicket(id, changes);
       load(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -61,7 +61,7 @@ export default function Home() {
 
       {tickets && pagination && (
         <>
-          <TicketTable tickets={tickets.data} onStatusChange={changeStatus} />
+          <TicketTable tickets={tickets.data} onChange={changeTicket} />
           <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm">
             <button
               type="button"
