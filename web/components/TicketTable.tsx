@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   PRIORITIES,
   Priority,
@@ -50,8 +51,12 @@ export default function TicketTable({
           {tickets.map((ticket) => (
             <tr key={ticket.id} className="align-top">
               <td className="px-3 py-2">
-                <div className="font-medium">{ticket.title}</div>
-                {ticket.description && <div className="text-gray-500">{ticket.description}</div>}
+                <Link href={`/tickets/${ticket.id}`} className="font-medium hover:underline">
+                  {ticket.title}
+                </Link>
+                {ticket.description && (
+                  <div className="line-clamp-2 text-gray-500">{ticket.description}</div>
+                )}
               </td>
               <td className="px-3 py-2">
                 <select

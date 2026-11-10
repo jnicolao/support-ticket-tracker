@@ -34,6 +34,10 @@ export function listTickets(page: number, limit: number, status: Status | null) 
   return request<TicketPage>(`/tickets?page=${page}&limit=${limit}${filter}`);
 }
 
+export function getTicket(id: string) {
+  return request<Ticket>(`/tickets/${id}`);
+}
+
 export function getStats() {
   return request<Stats>('/tickets/stats');
 }
